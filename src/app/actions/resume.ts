@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { checkAndIncrementUsage } from './userActions';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,6 +20,9 @@ export type Resume = {
 
 // 保存
 export async function saveResume(resume: Resume) {
+  // --- 新增：次数校验 ---
+  await checkAndIncrementUsage('resume'); 
+  // --------------------
   try {
     const { data, error } = await supabase
       .from("resumes")

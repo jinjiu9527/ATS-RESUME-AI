@@ -108,9 +108,9 @@ setFormData(prev => ({
         alert("AI return format error. Please check console.");
       }
     } catch (error) {
-      console.error(error);
-      alert("AI Optimization encountered an issue.");
-    } finally {
+  console.error(error);
+  alert(error instanceof Error ? error.message : "AI Optimization encountered an issue.");
+   } finally {
       setIsGenerating(false);
     }
   };

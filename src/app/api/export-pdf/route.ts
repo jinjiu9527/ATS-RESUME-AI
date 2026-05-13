@@ -1,7 +1,16 @@
+import { checkAndIncrementUsage } from '../../actions/userActions';
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer-core";
 
 export async function GET(req: NextRequest) {
+  // --- 新增：PDF 导出次数校验 ---
+  try {
+    await checkAndIncrementUsage('pdf');
+  } catch (error: any) {
+    // 如果校验失败，直接返回错误信息给前端，不执行后面的浏览器逻辑
+    return new Response(error.message, { status: 403 });
+  }
+  // -------------------------
   const { searchParams } = new URL(req.url);
 
   // 从 query 参数接收简历数据（由前端拼接后传入）

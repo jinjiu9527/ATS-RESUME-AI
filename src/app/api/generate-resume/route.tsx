@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkAndIncrementUsage } from '@/app/actions/userActions'
 
 /**
  * resumeai - API Route Handler
@@ -7,6 +8,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    await checkAndIncrementUsage('resume')
     // 1. 获取前端传来的数据
     const body = await req.json();
     const { 
