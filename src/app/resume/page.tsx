@@ -12,6 +12,7 @@ import {
 export default function ATSResumeOptimizer() {
   const resumeRef = useRef<HTMLDivElement>(null);
   const { user } = useUser();
+  const [activeTab, setActiveTab] = useState<'input' | 'preview' | 'ats'>('input')
 
   const [formData, setFormData] = useState({
     name: "",
@@ -152,7 +153,8 @@ setFormData(prev => ({
   return (
     <div className="flex flex-col h-screen overflow-hidden relative">
 
-      {/* 顶部导航栏 */}
+      
+{/* 顶部导航栏 */}
       <nav className="h-14 border-b bg-white flex items-center justify-between px-6 shrink-0 print:hidden z-20">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 bg-black text-white rounded-md flex items-center justify-center font-bold text-sm">
@@ -182,10 +184,25 @@ setFormData(prev => ({
       </nav>
 
       {/* 主体三栏布局 */}
+      {/* 手机端 Tab 导航 */}
+<div className="md:hidden flex border-b bg-white shrink-0 print:hidden">
+  <button onClick={() => setActiveTab('input')}
+    className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'input' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
+    Edit
+  </button>
+  <button onClick={() => setActiveTab('preview')}
+    className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'preview' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
+    Preview
+  </button>
+  <button onClick={() => setActiveTab('ats')}
+    className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'ats' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
+    ATS Score
+  </button>
+</div>
       <main className="flex-1 flex overflow-hidden">
 
         {/* 左侧：Input Panel */}
-        <section className="w-[400px] border-r bg-white overflow-y-auto scrollbar-hide flex flex-col print:hidden">
+        <section className={`${activeTab === 'input' ? 'flex' : 'hidden'} md:flex w-full md:w-[400px] border-r bg-white overflow-y-auto scrollbar-hide flex-col print:hidden`}>
           <div className="p-6 space-y-8 flex-1">
 
             {/* 1. Personal Info */}
@@ -257,7 +274,7 @@ setFormData(prev => ({
         </section>
 
         {/* 中间：Resume Preview */}
-        <section className="flex-1 bg-[#F3F4F6] overflow-y-auto p-10 flex justify-center print:p-0 print:bg-white">
+        <section className={`${activeTab === 'preview' ? 'flex' : 'hidden'} md:flex flex-1 bg-[#F3F4F6] overflow-y-auto p-4 md:p-10 justify-center print:p-0 print:bg-white`}>
           <div
             ref={resumeRef}
             className="bg-white shadow-2xl p-[0.75in] text-[#111] print:shadow-none print:w-full print:h-auto"
@@ -326,7 +343,7 @@ setFormData(prev => ({
         </section>
 
         {/* 右侧：ATS Analysis Panel */}
-        <section className="w-[350px] border-l bg-white overflow-y-auto p-6 scrollbar-hide print:hidden">
+        <section className={`${activeTab === 'ats' ? 'block' : 'hidden'} md:block w-full md:w-[350px] border-l bg-white overflow-y-auto p-6 scrollbar-hide print:hidden`}>
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
             <CheckCircle2 size={14} className="text-green-500" /> ATS Intelligence
           </h2>
