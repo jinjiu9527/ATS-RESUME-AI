@@ -114,11 +114,11 @@ export async function verifyUsage(type: 'resume' | 'pdf') {
     pdf_downloads = 0
   }
 
-  if (type === 'resume' && resume_generations >= 3) {
-    throw new Error("今日免费生成次数（3次）已用完，请明天再试")
+  if (type === 'resume' && resume_generations >= 6) {
+    throw new Error("You have reached your daily limit of 3 free resume generations. Please try again tomorrow.")
   }
-  if (type === 'pdf' && pdf_downloads >= 1) {
-    throw new Error("今日免费导出 PDF 次数（1次）已用完，请明天再试")
+  if (type === 'pdf' && pdf_downloads >= 2) {
+    throw new Error("You have reached your daily limit of 2 free PDF exports. Please try again tomorrow.")
   }
 
   return true
