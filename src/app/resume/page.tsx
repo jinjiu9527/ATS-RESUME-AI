@@ -285,12 +285,18 @@ setFormData(prev => ({
           </div>
         </section>
 
-        {/* 中间：Resume Preview */}
+       {/* 中间：Resume Preview */}
 <section
   className={`
-    ${activeTab === 'preview' ? 'block' : 'hidden'}
+    /* 1. 将 block 改为 flex，并加上 justify-center 实现水平居中 */
+    ${activeTab === 'preview' ? 'flex' : 'hidden'}
     preview-section
-    md:block
+    md:flex
+    justify-center
+    
+    /* 2. 必须加上纵向滚动条，否则纸张长了以后下面会被切掉且无法滚动 */
+    overflow-y-auto
+    
     flex-1
     bg-[#F3F4F6]
     p-4
@@ -303,70 +309,71 @@ setFormData(prev => ({
   <div
     id="resume-print-area"
     ref={resumeRef}
-    className="resume-content bg-white shadow-2xl p-[0.75in] text-[#111] print:shadow-none print:w-full print:h-auto"
+    /* 3. 加上 mx-auto（双重保险）和 my-auto（如果高度没满可以垂直居中，满了自动靠顶） */
+    className="resume-content mx-auto my-auto bg-white shadow-2xl p-[0.75in] text-[#111] print:shadow-none print:w-full print:h-auto shrink-0"
     style={{ width: "8.5in", minHeight: "11in" }}
   >
-            {/* Header */}
-            <div className="text-center border-b-[1.5px] border-black pb-4 mb-4">
-              <h1 className="text-[28px] font-serif font-bold uppercase tracking-widest mb-1 leading-none">
-                {formData.name || "JOHN DOE"}
-              </h1>
-              <div className="text-[11px] font-sans flex justify-center items-center gap-2 text-gray-800 uppercase tracking-wider">
-                {formData.location && <span>{formData.location}</span>}
-                {formData.location && (formData.phone || formData.email) && <span>|</span>}
-                {formData.phone && <span>{formData.phone}</span>}
-                {formData.phone && formData.email && <span>|</span>}
-                {formData.email && <span>{formData.email}</span>}
-              </div>
-            </div>
+    {/* Header */}
+    <div className="text-center border-b-[1.5px] border-black pb-4 mb-4">
+      <h1 className="text-[28px] font-serif font-bold uppercase tracking-widest mb-1 leading-none">
+        {formData.name || "JOHN DOE"}
+      </h1>
+      <div className="text-[11px] font-sans flex justify-center items-center gap-2 text-gray-800 uppercase tracking-wider">
+        {formData.location && <span>{formData.location}</span>}
+        {formData.location && (formData.phone || formData.email) && <span>|</span>}
+        {formData.phone && <span>{formData.phone}</span>}
+        {formData.phone && formData.email && <span>|</span>}
+        {formData.email && <span>{formData.email}</span>}
+      </div>
+    </div>
 
-            {/* Summary */}
-            {(formData.summary || atsResult.hasOptimized) && (
-              <div className="mb-4">
-                <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
-                  Professional Summary
-                </h3>
-                <p className="text-[11px] leading-[1.6] text-justify text-gray-800">
-                  { stripMarkdown(formData.summary) || "Results-driven professional with a proven track record of..."}
-                </p>
-              </div>
-            )}
+    {/* Summary */}
+    {(formData.summary || atsResult.hasOptimized) && (
+      <div className="mb-4">
+        <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
+          Professional Summary
+        </h3>
+        <p className="text-[11px] leading-[1.6] text-justify text-gray-800">
+          { stripMarkdown(formData.summary) || "Results-driven professional with a proven track record of..."}
+        </p>
+      </div>
+    )}
 
-            {/* Experience */}
-            <div className="mb-4">
-              <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
-                Experience
-              </h3>
-              <div className="text-[11px] leading-[1.6] text-gray-800 whitespace-pre-wrap">
-                {stripMarkdown(formData.experience) || "Your optimized professional experience will be structured here."}
-              </div>
-            </div>
+    {/* Experience */}
+    <div className="mb-4">
+      <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
+        Experience
+      </h3>
+      <div className="text-[11px] leading-[1.6] text-gray-800 whitespace-pre-wrap">
+        {stripMarkdown(formData.experience) || "Your optimized professional experience will be structured here."}
+      </div>
+    </div>
 
-            {/* Skills */}
-            {formData.skills && (
-              <div className="mb-4">
-                <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
-                  Core Competencies
-                </h3>
-                <p className="text-[11px] leading-[1.6] text-gray-800">
-                  {stripMarkdown(formData.skills).split(",").map((s) => s.trim()).join(" • ")}
-                </p>
-              </div>
-            )}
+    {/* Skills */}
+    {formData.skills && (
+      <div className="mb-4">
+        <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
+          Core Competencies
+        </h3>
+        <p className="text-[11px] leading-[1.6] text-gray-800">
+          {stripMarkdown(formData.skills).split(",").map((s) => s.trim()).join(" • ")}
+        </p>
+      </div>
+    )}
 
-            {/* Education */}
-            {formData.education && (
-              <div className="mb-4">
-                <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
-                  Education
-                </h3>
-                <div className="text-[11px] leading-[1.6] text-gray-800 whitespace-pre-wrap">
-                  {stripMarkdown(formData.education)}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+    {/* Education */}
+    {formData.education && (
+      <div className="mb-4">
+        <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
+          Education
+        </h3>
+        <div className="text-[11px] leading-[1.6] text-gray-800 whitespace-pre-wrap">
+          {stripMarkdown(formData.education)}
+        </div>
+      </div>
+    )}
+  </div>
+</section>
 
         {/* 右侧：ATS Analysis Panel */}
         <section className={`${activeTab === 'ats' ? 'block' : 'hidden'} md:block w-full md:w-[350px] border-l bg-white overflow-y-auto p-6 scrollbar-hide print:hidden`}>
