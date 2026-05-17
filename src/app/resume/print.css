@@ -86,3 +86,17 @@
     display: none !important;
   }
 }
+/* 隐藏左侧输入面板和右侧ATS面板 */
+section:first-of-type,
+section:last-of-type {
+  display: none !important;
+}
+
+/* 只显示中间简历预览 */
+section:nth-of-type(2) {
+  display: flex !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: white !important;
+}
