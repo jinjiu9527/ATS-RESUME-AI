@@ -1,15 +1,10 @@
-/* src/app/resume/print.css */
-
 @page {
   size: A4 portrait;
   margin: 1cm;
 }
+
 @media print {
-  /* 强制显示所有内容 */
-  * {
-    visibility: visible !important;
-  }
-  
+  /* 1. 基础页面重置 */
   body {
     margin: 0 !important;
     padding: 0 !important;
@@ -20,19 +15,29 @@
     background: white !important;
   }
 
-  /* 显示主要容器 */
-  body, main, section {
-    display: block !important;
-  }
-
+  /* 2. 简历容器强制展开并清除缩放（关键修复） */
+  /* 注意：请确保你的简历A4纸那个 div 上有 className="resume-container" 或 id="resume-print-area" */
+  #resume-print-area,
   .resume-container,
   .resume-content {
-    max-width: 100% !important;
-    margin: 0 auto !important;
-    padding: 10px 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
     display: block !important;
+    box-shadow: none !important;
+    transform: none !important; /* 抵消适配手机端时的 scale 缩放 */
   }
 
+  /* 3. 隐藏不需要的UI元素 */
+  nav, button, footer, header, .sidebar, .no-print {
+    display: none !important;
+  }
+
+  /* ========================================= */
+  /* 下面完全保留你原来的排版与分页控制样式      */
+  /* ========================================= */
+  
   h1 {
     font-size: 20pt !important;
     margin-bottom: 12px !important;
@@ -80,23 +85,4 @@
     page-break-inside: avoid !important;
     margin-bottom: 16px !important;
   }
-
-  /* 只隐藏这些 */
-  nav, button, footer, header, .sidebar, .no-print {
-    display: none !important;
-  }
-}
-/* 隐藏左侧输入面板和右侧ATS面板 */
-section:first-of-type,
-section:last-of-type {
-  display: none !important;
-}
-
-/* 只显示中间简历预览 */
-section:nth-of-type(2) {
-  display: flex !important;
-  width: 100% !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: white !important;
 }

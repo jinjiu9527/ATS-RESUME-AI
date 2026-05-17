@@ -288,6 +288,7 @@ setFormData(prev => ({
         {/* 中间：Resume Preview */}
         <section className={`${activeTab === 'preview' ? 'flex' : 'hidden'} md:flex flex-1 bg-[#F3F4F6] overflow-y-auto p-4 md:p-10 justify-center print:p-0 print:bg-white`}>
           <div
+  id="resume-print-area"
   ref={resumeRef}
   className="resume-content bg-white shadow-2xl p-[0.75in] text-[#111] print:shadow-none print:w-full print:h-auto"
   style={{ width: "8.5in", minHeight: "11in" }}
