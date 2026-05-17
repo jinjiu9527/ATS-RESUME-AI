@@ -1,88 +1,133 @@
+/* src/app/resume/print.css */
+
 @page {
-  size: A4 portrait;
-  margin: 1cm;
+  size: Letter portrait;
+  margin: 0.5in;
 }
 
 @media print {
-  /* 1. 基础页面重置 */
+
+  html,
   body {
-    margin: 0 !important;
-    padding: 0 !important;
-    font-family: "Helvetica Neue", Arial, sans-serif !important;
-    font-size: 11.5pt !important;
-    line-height: 1.55 !important;
-    color: #000 !important;
+    width: 8.5in;
     background: white !important;
-  }
 
-  /* 2. 简历容器强制展开并清除缩放（关键修复） */
-  /* 注意：请确保你的简历A4纸那个 div 上有 className="resume-container" 或 id="resume-print-area" */
-  #resume-print-area,
-  .resume-container,
-  .resume-content {
-    width: 100% !important;
-    max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
+
+    overflow: visible !important;
+
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    font-family: "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    color: #000 !important;
+  }
+
+  /* 修复 Tailwind */
+
+  .min-h-screen,
+  .h-screen,
+  .max-h-screen {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+
+  .overflow-hidden,
+  .overflow-auto,
+  .overflow-scroll {
+    overflow: visible !important;
+  }
+
+  .fixed,
+  .sticky {
+    position: static !important;
+  }
+
+  /* Resume */
+
+  #resume-print-area,
+  .resume-content,
+  .resume-container {
+
+    width: 8.5in !important;
+    min-height: 11in !important;
+
+    margin: 0 auto !important;
+    padding: 0.3in !important;
+
+    background: white !important;
+    color: black !important;
+
+    overflow: visible !important;
+
     display: block !important;
+
     box-shadow: none !important;
-    transform: none !important; /* 抵消适配手机端时的 scale 缩放 */
   }
 
-  /* 3. 隐藏不需要的UI元素 */
-  nav, button, footer, header, .sidebar, .no-print {
-    display: none !important;
-  }
+  /* Typography */
 
-  /* ========================================= */
-  /* 下面完全保留你原来的排版与分页控制样式      */
-  /* ========================================= */
-  
   h1 {
-    font-size: 20pt !important;
-    margin-bottom: 12px !important;
+    font-size: 24pt !important;
+    margin-bottom: 10px !important;
   }
 
   h2 {
     font-size: 14pt !important;
-    margin: 22px 0 10px 0 !important;
-    padding-bottom: 6px !important;
-    border-bottom: 2px solid #333 !important;
+    margin: 18px 0 8px 0 !important;
+
+    border-bottom: 1px solid #333 !important;
+    padding-bottom: 4px !important;
   }
 
   h3 {
-    font-size: 12.5pt !important;
-    margin: 16px 0 6px !important;
+    font-size: 12pt !important;
+    margin-bottom: 4px !important;
   }
 
-  ul, ol {
-    margin: 8px 0 12px 0 !important;
-    padding-left: 22px !important;
-  }
-
+  p,
   li {
-    margin-bottom: 7px !important;
-    page-break-inside: avoid !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
   }
 
-  p {
-    margin: 6px 0 !important;
+  ul,
+  ol {
+    padding-left: 20px !important;
   }
 
-  li::marker {
-    content: "•" !important;
-    font-size: 13pt !important;
-  }
+  /* 分页 */
 
-  h1, h2, h3, .section {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
-
+  section,
+  .section,
   .experience-item,
   .project-item,
-  .skill-item {
+  .education-item {
     page-break-inside: avoid !important;
-    margin-bottom: 16px !important;
+    break-inside: avoid !important;
+  }
+
+  h1,
+  h2,
+  h3 {
+    page-break-after: avoid !important;
+  }
+
+  /* 隐藏 */
+
+  nav,
+  header,
+  footer,
+  button,
+  .sidebar,
+  .toolbar,
+  .no-print {
+    display: none !important;
   }
 }
