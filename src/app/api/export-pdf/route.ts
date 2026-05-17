@@ -1,5 +1,6 @@
 import { checkAndIncrementUsage } from '../../actions/userActions';
 import { NextRequest, NextResponse } from "next/server";
+import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
 
 export async function GET(req: NextRequest) {
@@ -142,11 +143,12 @@ export async function GET(req: NextRequest) {
 
   try {
     const browser = await puppeteer.launch({
-      headless: true,
-      executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
+  args: chromium.args,
+  executablePath: process.env.NODE_ENV === 'production'
+    ? await chromium.executablePath()
+    : "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  headless: true,
+});
     const page = await browser.newPage();
 
     await page.setContent(html, {
