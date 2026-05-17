@@ -60,17 +60,29 @@ export default function ATSResumeOptimizer() {
   };
 
   // ---- Export PDF：把表单数据拼进 query string 传给 Puppeteer route ----
-  const handleExportPDF = () => {
-    setIsExporting(true);
-    const params = new URLSearchParams();
-    Object.entries(formData).forEach(([key, val]) => {
-      if (val) params.set(key, val);
-    });
-    // 在新标签打开，浏览器会自动触发下载
-    window.open(`/api/export-pdf?${params.toString()}`, "_blank");
-    // 给用户一点反馈时间
-    setTimeout(() => setIsExporting(false), 2000);
-  };
+ const handleExportPDF = async () => {
+  setIsExporting(true);
+  try {
+    // 先验证次数
+    const response = await fetch('/api/verify-pdf', { method: 'POST' });
+    if (!response.ok) {
+      const error = await response.text();
+      alert(error);
+      return;
+    }
+
+    // 验证通过，触发打印
+    window.print();
+
+    // 打印后扣除次数
+    await fetch('/api/decrement-pdf', { method: 'POST' });
+  } catch (error) {
+    console.error(error);
+    alert("导出失败");
+  } finally {
+    setIsExporting(false);
+  }
+};
 
   const handleAiOptimize = async () => {
     if (!formData.experience) return alert("Please input some experience to optimize.");
