@@ -11,12 +11,39 @@
     margin: 0 !important;
     padding: 0 !important;
 
+    overflow: visible !important;
+
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  body {
+  /* 修复 Preview 区域 */
+
+  .preview-section {
+    display: block !important;
     overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Resume 主体 */
+
+  #resume-print-area {
+
+    display: block !important;
+
+    position: static !important;
+
+    overflow: visible !important;
+
+    width: 8.5in !important;
+    min-height: 11in !important;
+
+    margin: 0 auto !important;
+    padding: 0.5in !important;
+
+    background: white !important;
+
+    box-shadow: none !important;
   }
 
   /* 修复 Tailwind */
@@ -31,28 +58,6 @@
   .h-screen {
     height: auto !important;
     min-height: auto !important;
-  }
-
-  /* 核心 */
-
-  .preview-section {
-    display: block !important;
-  }
-
-  #resume-print-area {
-    width: 8.5in !important;
-    min-height: 11in !important;
-
-    margin: 0 auto !important;
-    padding: 0.5in !important;
-
-    background: white !important;
-
-    box-shadow: none !important;
-
-    overflow: visible !important;
-
-    display: block !important;
   }
 
   /* 分页 */
