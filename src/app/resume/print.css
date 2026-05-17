@@ -1,5 +1,3 @@
-/* src/app/resume/print.css */
-
 @page {
   size: Letter portrait;
   margin: 0.5in;
@@ -9,34 +7,19 @@
 
   html,
   body {
-    width: 8.5in;
     background: white !important;
-
     margin: 0 !important;
     padding: 0 !important;
-
-    overflow: visible !important;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
   body {
-    font-family: "Helvetica Neue", Arial, sans-serif !important;
-    font-size: 11pt !important;
-    line-height: 1.5 !important;
-    color: #000 !important;
+    overflow: visible !important;
   }
 
   /* 修复 Tailwind */
-
-  .min-h-screen,
-  .h-screen,
-  .max-h-screen {
-    height: auto !important;
-    min-height: auto !important;
-    max-height: none !important;
-  }
 
   .overflow-hidden,
   .overflow-auto,
@@ -44,89 +27,49 @@
     overflow: visible !important;
   }
 
-  .fixed,
-  .sticky {
-    position: static !important;
+  .min-h-screen,
+  .h-screen {
+    height: auto !important;
+    min-height: auto !important;
   }
 
-  /* Resume */
+  /* 核心 */
 
-  #resume-print-area,
-  .resume-content,
-  .resume-container {
+  .preview-section {
+    display: block !important;
+  }
 
+  #resume-print-area {
     width: 8.5in !important;
     min-height: 11in !important;
 
     margin: 0 auto !important;
-    padding: 0.3in !important;
+    padding: 0.5in !important;
 
     background: white !important;
-    color: black !important;
+
+    box-shadow: none !important;
 
     overflow: visible !important;
 
     display: block !important;
-
-    box-shadow: none !important;
-  }
-
-  /* Typography */
-
-  h1 {
-    font-size: 24pt !important;
-    margin-bottom: 10px !important;
-  }
-
-  h2 {
-    font-size: 14pt !important;
-    margin: 18px 0 8px 0 !important;
-
-    border-bottom: 1px solid #333 !important;
-    padding-bottom: 4px !important;
-  }
-
-  h3 {
-    font-size: 12pt !important;
-    margin-bottom: 4px !important;
-  }
-
-  p,
-  li {
-    font-size: 11pt !important;
-    line-height: 1.5 !important;
-  }
-
-  ul,
-  ol {
-    padding-left: 20px !important;
   }
 
   /* 分页 */
 
   section,
-  .section,
   .experience-item,
   .project-item,
   .education-item {
-    page-break-inside: avoid !important;
     break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
-  h1,
-  h2,
-  h3 {
-    page-break-after: avoid !important;
-  }
-
-  /* 隐藏 */
+  /* 隐藏 UI */
 
   nav,
-  header,
-  footer,
   button,
-  .sidebar,
-  .toolbar,
+  footer,
   .no-print {
     display: none !important;
   }
