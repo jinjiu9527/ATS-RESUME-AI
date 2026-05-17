@@ -79,3 +79,6 @@
     display: none !important;
   }
 }
+* {
+  color: black !important;
+}
