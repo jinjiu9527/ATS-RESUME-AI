@@ -73,8 +73,13 @@
     margin-bottom: 16px !important;
   }
 
-  /* 隐藏所有非简历内容 */
-  nav, button, footer, .no-print, header, .sidebar {
-    display: none !important;
-  }
+ nav, button, footer, .no-print, header, .sidebar {
+  display: none !important;
+}
+
+/* 强制显示简历 */
+.resume-content {
+  display: block !important;
+  visibility: visible !important;
+}
 }
