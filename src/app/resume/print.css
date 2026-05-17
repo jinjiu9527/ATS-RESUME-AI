@@ -4,8 +4,12 @@
   size: A4 portrait;
   margin: 1cm;
 }
-
 @media print {
+  /* 强制显示所有内容 */
+  * {
+    visibility: visible !important;
+  }
+  
   body {
     margin: 0 !important;
     padding: 0 !important;
@@ -16,11 +20,17 @@
     background: white !important;
   }
 
+  /* 显示主要容器 */
+  body, main, section {
+    display: block !important;
+  }
+
   .resume-container,
   .resume-content {
     max-width: 100% !important;
     margin: 0 auto !important;
     padding: 10px 0 !important;
+    display: block !important;
   }
 
   h1 {
@@ -54,13 +64,11 @@
     margin: 6px 0 !important;
   }
 
-  /* 强制项目符号正常显示 */
   li::marker {
     content: "•" !important;
     font-size: 13pt !important;
   }
 
-  /* 防止段落和标题被切断 */
   h1, h2, h3, .section {
     page-break-after: avoid !important;
     break-after: avoid !important;
@@ -73,13 +81,8 @@
     margin-bottom: 16px !important;
   }
 
- nav, button, footer, .no-print, header, .sidebar {
-  display: none !important;
-}
-
-/* 强制显示简历 */
-.resume-content {
-  display: block !important;
-  visibility: visible !important;
-}
+  /* 只隐藏这些 */
+  nav, button, footer, header, .sidebar, .no-print {
+    display: none !important;
+  }
 }
