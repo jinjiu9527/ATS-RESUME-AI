@@ -79,6 +79,16 @@
     display: none !important;
   }
 }
-* {
-  color: black !important;
+@media print {
+
+  #resume-print-area,
+  #resume-print-area * {
+
+    color: #000 !important;
+
+    opacity: 1 !important;
+
+    visibility: visible !important;
+  }
+
 }
