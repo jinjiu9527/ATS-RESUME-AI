@@ -288,17 +288,18 @@ setFormData(prev => ({
        {/* 中间：Resume Preview */}
 <section
   className={`
-    /* 1. 将 block 改为 flex，并加上 justify-center 实现水平居中 */
     ${activeTab === 'preview' ? 'flex' : 'hidden'}
     preview-section
     md:flex
-    justify-center
     
-    /* 2. 必须加上纵向滚动条，否则纸张长了以后下面会被切掉且无法滚动 */
-    overflow-y-auto
+    /* 1. 核心改动：去掉之前的 justify-center，防止左侧内容被切断 */
+    
+    /* 2. 核心改动：把 overflow-y-auto 改为 overflow-auto，允许内容过多时产生横向滚动条 */
+    overflow-auto
     
     flex-1
     bg-[#F3F4F6]
+    /* 这里的 p-4 和 md:p-10 就是你左边和四周的留白（Padding） */
     p-4
     md:p-10
     print:p-0
@@ -309,7 +310,12 @@ setFormData(prev => ({
   <div
     id="resume-print-area"
     ref={resumeRef}
-    /* 3. 加上 mx-auto（双重保险）和 my-auto（如果高度没满可以垂直居中，满了自动靠顶） */
+    /* 
+      3. 保持 mx-auto 和 my-auto：
+         - 当空间充足时：mx-auto 在 flex 容器里会自动平分左右剩余空间，完美居中。
+         - 当空间不足（左边栏拉得太大）时：mx-auto 会失效，简历自动靠左对齐，
+           死死守住父级设定的 md:p-10（左边留白），你可以顺畅地往右滚动查看全貌！
+    */
     className="resume-content mx-auto my-auto bg-white shadow-2xl p-[0.75in] text-[#111] print:shadow-none print:w-full print:h-auto shrink-0"
     style={{ width: "8.5in", minHeight: "11in" }}
   >
