@@ -16,7 +16,6 @@ function PaymentSuccessContent() {
   );
 
   useEffect(() => {
-    // 等待 Clerk 加载完成
     if (!isLoaded) return;
 
     let attempts = 0;
@@ -33,7 +32,7 @@ function PaymentSuccessContent() {
           }
         }
       } catch {
-        // 继续轮询
+        // keep polling
       }
 
       attempts++;
@@ -44,7 +43,6 @@ function PaymentSuccessContent() {
       }
     };
 
-    // 首次延迟 3 秒（等待 Webhook）
     const timer = setTimeout(checkPlan, 3000);
     return () => clearTimeout(timer);
   }, [isLoaded, checkoutId]);
@@ -58,19 +56,19 @@ function PaymentSuccessContent() {
               <Loader2 size={32} className="text-amber-500 animate-spin" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              正在确认支付...
+              Confirming Payment...
             </h1>
             <p className="text-gray-500 text-sm leading-relaxed">
               {isLoaded && !user
-                ? "支付已完成，请登录后查看您的 Pro 状态。"
-                : "我们正在确认您的支付状态，请稍候片刻。"}
+                ? "Payment received. Please sign in to activate your Pro membership."
+                : "We're verifying your payment. This will only take a moment."}
             </p>
             {isLoaded && !user && (
               <Link
                 href="/resume"
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm bg-black text-white hover:bg-gray-800 transition-all shadow-lg group mt-6"
               >
-                登录账户
+                Sign In
                 <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
             )}
@@ -83,16 +81,16 @@ function PaymentSuccessContent() {
               <CheckCircle2 size={32} className="text-green-500" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              支付成功！
+              Payment Successful!
             </h1>
             <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-              欢迎成为 Pro 会员！现在您可以无限使用所有高级功能。
+              Welcome to Pro! You now have unlimited access to all premium features.
             </p>
             <Link
               href="/resume"
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm bg-black text-white hover:bg-gray-800 transition-all shadow-lg group"
             >
-              开始使用 Pro 功能
+              Start Using Pro
               <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </>
@@ -104,16 +102,16 @@ function PaymentSuccessContent() {
               <CheckCircle2 size={32} className="text-amber-500" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              支付处理中
+              Processing...
             </h1>
             <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-              您的支付正在处理中，会员状态将在几分钟内更新。如有问题请联系支持。
+              Your payment is being processed. Pro status will be updated within a few minutes. Contact support if you need help.
             </p>
             <Link
               href="/resume"
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm bg-black text-white hover:bg-gray-800 transition-all shadow-lg group"
             >
-              返回应用
+              Back to App
               <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </>

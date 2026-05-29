@@ -30,15 +30,14 @@ export function UpgradeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* 背景遮罩 */}
+      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in"
         onClick={onClose}
       />
 
-      {/* 弹窗卡片 */}
+      {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95 fade-in">
-        {/* 关闭按钮 */}
         <button
           onClick={onClose}
           className="absolute right-4 top-4 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
@@ -46,27 +45,26 @@ export function UpgradeModal({
           <X size={18} />
         </button>
 
-        {/* 图标 */}
         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/25">
           <Crown size={24} className="text-white" />
         </div>
 
-        {/* 标题 */}
         <h2 className="text-xl font-bold text-gray-900 mb-2">
-          免费次数已用完
+          Free Limit Reached
         </h2>
         <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-          您今天已使用 <span className="font-bold text-gray-900">{currentUsage}/{dailyLimit}</span> 次免费 ATS 检测。
-          升级 Pro 会员解锁无限次数和更多高级功能。
+          You've used{" "}
+          <span className="font-bold text-gray-900">{currentUsage}/{dailyLimit}</span>{" "}
+          free ATS scans today. Upgrade to Pro for unlimited scans and premium features.
         </p>
 
-        {/* 功能亮点 */}
+        {/* Pro benefits */}
         <div className="space-y-2.5 mb-6 p-4 bg-amber-50 rounded-xl border border-amber-100">
           {[
-            { icon: Zap, text: "无限 ATS 检测次数" },
-            { icon: Sparkles, text: "AI 简历优化建议" },
-            { icon: TrendingUp, text: "ATS 缺失关键词分析" },
-            { icon: FileText, text: "更详细的匹配报告" },
+            { icon: Zap, text: "Unlimited ATS scans" },
+            { icon: Sparkles, text: "AI optimization suggestions" },
+            { icon: TrendingUp, text: "Missing keyword analysis" },
+            { icon: FileText, text: "Detailed match reports" },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-2.5 text-sm text-gray-700">
               <item.icon size={14} className="text-amber-500 shrink-0" />
@@ -75,7 +73,7 @@ export function UpgradeModal({
           ))}
         </div>
 
-        {/* 按钮 */}
+        {/* Buttons */}
         <div className="space-y-2.5">
           <button
             onClick={handleUpgrade}
@@ -84,11 +82,11 @@ export function UpgradeModal({
           >
             {loading ? (
               <>
-                <span className="animate-spin">⏳</span> 跳转中...
+                <span className="animate-spin">⏳</span> Redirecting...
               </>
             ) : (
               <>
-                <Crown size={16} /> 升级 Pro — $9/月
+                <Crown size={16} /> Upgrade to Pro — $9/mo
               </>
             )}
           </button>
@@ -96,7 +94,7 @@ export function UpgradeModal({
             onClick={onClose}
             className="w-full py-2.5 rounded-xl font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            以后再说
+            Maybe Later
           </button>
         </div>
       </div>

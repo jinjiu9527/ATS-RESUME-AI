@@ -3,13 +3,13 @@
 import { auth } from '@clerk/nextjs/server'
 import { createClerkSupabaseClient, supabase } from '@/lib/supabase'
 
-// 免费用户每日限制
+// Daily limits for free users
 const FREE_LIMITS = {
   resume: 3,
   pdf: 1,
 } as const
 
-/** 检查用户是否为 Pro */
+/** Check if user has an active Pro subscription */
 async function isUserPro(userId: string): Promise<boolean> {
   const { data: profile } = await supabase
     .from('profiles')
@@ -18,7 +18,7 @@ async function isUserPro(userId: string): Promise<boolean> {
     .single()
 
   if (!profile) return false
-  // Pro 且状态为 active（取消但未到期也算 active）
+  // Pro plan with active or cancelled (still within billing period) status
   return profile.plan === 'pro' &&
     (profile.subscription_status === 'active' ||
      profile.subscription_status === 'cancelled')
@@ -28,10 +28,10 @@ export async function checkAndIncrementUsage(type: 'resume' | 'pdf') {
   const { userId, getToken } = await auth()
   if (!userId) throw new Error("Login required")
 
-  // 检查是否为 Pro 用户，Pro 用户无限制
+  // Pro users bypass all limits
   const pro = await isUserPro(userId)
   if (pro) {
-    // Pro 用户仅记录使用，不限制
+    // Track usage for analytics but don't block
     const today = new Date().toISOString().split('T')[0]
     const token = await getToken({ template: 'supabase' })
     const client = createClerkSupabaseClient(token)
@@ -51,14 +51,14 @@ export async function checkAndIncrementUsage(type: 'resume' | 'pdf') {
         pdf_downloads: type === 'pdf' ? pdfCount + 1 : pdfCount,
         last_reset_date: today
       }, { onConflict: 'id' })
-    return // Pro 用户无限制，直接通过
+    return
   }
 
   const today = new Date().toISOString().split('T')[0]
   const token = await getToken({ template: 'supabase' })
   const supabaseClient = createClerkSupabaseClient(token)
 
-  // 获取或创建用户记录
+  // Get or create profile
   let { data: profile } = await supabaseClient
     .from('profiles')
     .select('*')
@@ -74,7 +74,7 @@ export async function checkAndIncrementUsage(type: 'resume' | 'pdf') {
 
     if (createError) {
       console.error("createError:", JSON.stringify(createError))
-      throw new Error("初始化用户配置失败")
+      throw new Error("Failed to initialize user profile")
     }
     profile = newProfile
   }
@@ -85,23 +85,23 @@ export async function checkAndIncrementUsage(type: 'resume' | 'pdf') {
     last_reset_date = today
   } = profile || {}
 
-  // 新的一天重置计数
+  // Reset counters for a new day
   if (last_reset_date !== today) {
     resume_generations = 0
     pdf_downloads = 0
     last_reset_date = today
   }
 
-  // 检查免费用户限制
+  // Check free user limits
   const limit = FREE_LIMITS[type]
   const current = type === 'resume' ? resume_generations : pdf_downloads
-  const label = type === 'resume' ? 'ATS 检测' : 'PDF 导出'
+  const label = type === 'resume' ? 'ATS scan' : 'PDF export'
 
   if (current >= limit) {
-    throw new Error(`每日免费${label}次数已用完 (${current}/${limit})。请升级 Pro 会员或明天再试。`)
+    throw new Error(`Daily free ${label} limit reached (${current}/${limit}). Upgrade to Pro or try again tomorrow.`)
   }
 
-  // 更新次数
+  // Increment usage
   const updateData = {
     resume_generations: type === 'resume' ? resume_generations + 1 : resume_generations,
     pdf_downloads: type === 'pdf' ? pdf_downloads + 1 : pdf_downloads,
@@ -115,16 +115,16 @@ export async function checkAndIncrementUsage(type: 'resume' | 'pdf') {
 
   if (updateError) {
     console.error("updateError:", JSON.stringify(updateError))
-    throw new Error("更新使用次数失败")
+    throw new Error("Failed to update usage count")
   }
 }
 
-// 仅验证次数，不扣除
+// Verify usage without deducting
 export async function verifyUsage(type: 'resume' | 'pdf') {
   const { userId, getToken } = await auth()
-  if (!userId) throw new Error("请先登录")
+  if (!userId) throw new Error("Login required")
 
-  // Pro 用户无限制
+  // Pro users have no limits
   const pro = await isUserPro(userId)
   if (pro) return true
 
@@ -147,7 +147,7 @@ export async function verifyUsage(type: 'resume' | 'pdf') {
 
     if (createError) {
       console.error("createError:", JSON.stringify(createError))
-      throw new Error("无法初始化用户配置")
+      throw new Error("Failed to initialize user profile")
     }
     profile = newProfile
   }
@@ -165,21 +165,21 @@ export async function verifyUsage(type: 'resume' | 'pdf') {
 
   const limit = FREE_LIMITS[type]
   const current = type === 'resume' ? resume_generations : pdf_downloads
-  const label = type === 'resume' ? 'ATS 检测' : 'PDF 导出'
+  const label = type === 'resume' ? 'ATS scan' : 'PDF export'
 
   if (current >= limit) {
-    throw new Error(`每日免费${label}次数已用完 (${current}/${limit})。请升级 Pro 会员或明天再试。`)
+    throw new Error(`Daily free ${label} limit reached (${current}/${limit}). Upgrade to Pro or try again tomorrow.`)
   }
 
   return true
 }
 
-// 仅扣除次数，不验证
+// Deduct usage without validating
 export async function decrementUsage(type: 'resume' | 'pdf') {
   const { userId, getToken } = await auth()
   if (!userId) return
 
-  // Pro 用户不扣除
+  // Pro users don't get deducted
   const pro = await isUserPro(userId)
   if (pro) return
 

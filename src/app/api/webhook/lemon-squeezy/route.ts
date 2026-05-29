@@ -3,8 +3,8 @@ import { verifyWebhookSignature } from "@/lib/lemonsqueezy";
 import { extractWebhookInfo, updateUserSubscription } from "@/lib/subscription";
 
 /**
- * Lemon Squeezy Webhook 处理器
- * 接收订单创建、订阅状态变更等事件，自动更新用户 Pro 状态
+ * Lemon Squeezy Webhook Handler
+ * Receives order/subscription events and auto-updates user Pro status
  */
 export async function POST(req: Request) {
   try {
@@ -13,19 +13,19 @@ export async function POST(req: Request) {
 
     // 1. 验证签名
     if (!verifyWebhookSignature(rawBody, signature)) {
-      console.warn("Webhook 签名验证失败");
+      console.warn("Webhook signature verification failed");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     // 2. 解析 payload
     const payload = JSON.parse(rawBody);
     const eventName = payload.meta?.event_name;
-    console.log(`收到 Lemon Squeezy Webhook: ${eventName}`);
+    console.log(`Received Lemon Squeezy Webhook: ${eventName}`);
 
     // 3. 提取用户信息
     const info = extractWebhookInfo(payload);
     if (!info) {
-      console.warn("无法从 Webhook 中提取用户信息，跳过处理");
+      console.warn("Cannot extract user info from webhook, skipping");
       return NextResponse.json({ received: true });
     }
 
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
           orderId: info.orderId,
           status: "active",
         });
-        console.log(`用户 ${info.userId} 升级为 Pro`);
+        console.log(`User ${info.userId} upgraded to Pro`);
         break;
 
       case "subscription_updated":
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
           status: info.status,
           endsAt: info.endsAt,
         });
-        console.log(`用户 ${info.userId} 订阅更新: ${info.status}`);
+        console.log(`User ${info.userId} subscription updated: ${info.status}`);
         break;
 
       case "subscription_cancelled":
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
           status: "cancelled",
           endsAt: info.endsAt,
         });
-        console.log(`用户 ${info.userId} 订阅已取消`);
+        console.log(`User ${info.userId} subscription cancelled`);
         break;
 
       case "subscription_expired":
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
           status: "expired",
           endsAt: null,
         });
-        console.log(`用户 ${info.userId} 降级为 Free`);
+        console.log(`User ${info.userId} downgraded to Free`);
         break;
 
       case "subscription_payment_failed":
@@ -85,16 +85,16 @@ export async function POST(req: Request) {
           plan: "pro", // 暂时保留 Pro，等待重试
           status: "past_due",
         });
-        console.log(`用户 ${info.userId} 续费失败`);
+        console.log(`User ${info.userId} payment failed`);
         break;
 
       default:
-        console.log(`未处理的事件类型: ${eventName}`);
+        console.log(`Unhandled event type: ${eventName}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error("Webhook 处理错误:", error);
+    console.error("Webhook processing error:", error);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }

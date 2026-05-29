@@ -60,7 +60,7 @@ export default function ATSResumeOptimizer() {
     initHistory();
   }, [user?.id]);
 
-  // 获取用户 Pro 状态
+  // Fetch user Pro status
   useEffect(() => {
     async function fetchPlan() {
       if (!user?.id) return;
@@ -70,7 +70,7 @@ export default function ATSResumeOptimizer() {
           const data = await res.json();
           setUserPlan(data.plan as "free" | "pro");
         }
-      } catch { /* 忽略 */ }
+      } catch { /* ignore */ }
     }
     fetchPlan();
   }, [user?.id]);
@@ -80,7 +80,7 @@ export default function ATSResumeOptimizer() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ---- 升级处理 ----
+  // ---- Upgrade handler ----
   const handleUpgrade = async () => {
     try {
       const res = await fetch("/api/checkout", {
@@ -91,10 +91,10 @@ export default function ATSResumeOptimizer() {
         const { url } = await res.json();
         window.location.href = url;
       } else {
-        alert("创建支付链接失败，请稍后重试");
+        alert("Failed to create checkout. Please try again later.");
       }
     } catch {
-      alert("支付系统暂时不可用");
+      alert("Payment system unavailable. Please try again later.");
     }
   };
 
@@ -105,7 +105,7 @@ export default function ATSResumeOptimizer() {
       const response = await fetch('/api/verify-pdf', { method: 'POST' });
       if (!response.ok) {
         const errText = await response.text();
-        if (errText.includes("limit") || errText.includes("已用完") || errText.includes("Daily free")) {
+        if (errText.includes("limit") || errText.includes("Daily free")) {
           setDailyUsage({ used: 1, limit: 1 });
           setShowUpgradeModal(true);
           return;
@@ -118,7 +118,7 @@ export default function ATSResumeOptimizer() {
       await fetch('/api/decrement-pdf', { method: 'POST' });
     } catch (error) {
       console.error(error);
-      alert("导出失败");
+      alert("Export failed. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -137,10 +137,10 @@ export default function ATSResumeOptimizer() {
 
       const result = await res.json();
 
-      // 检测使用限制错误
+      // Check for usage limit errors
       if (!res.ok) {
         const msg = result?.details || result?.error || "";
-        if (msg.includes("limit") || msg.includes("已用完") || msg.includes("Daily free")) {
+        if (msg.includes("limit") || msg.includes("Daily free")) {
           const match = msg.match(/(\d+)\/(\d+)/);
           if (match) {
             setDailyUsage({ used: parseInt(match[1]), limit: parseInt(match[2]) });
@@ -226,7 +226,7 @@ export default function ATSResumeOptimizer() {
   return (
     <div className="flex flex-col h-screen overflow-hidden relative">
 
-      {/* 顶部导航栏 */}
+      {/* Top Navigation */}
       <nav className="h-14 border-b bg-white flex items-center justify-between px-6 shrink-0 print:hidden z-20">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 bg-black text-white rounded-md flex items-center justify-center font-bold text-sm">
@@ -255,7 +255,7 @@ export default function ATSResumeOptimizer() {
         </div>
       </nav>
 
-      {/* 手机端 Tab 导航 */}
+      {/* Mobile Tab Navigation */}
       <div className="md:hidden flex border-b bg-white shrink-0 print:hidden">
         <button onClick={() => setActiveTab('input')}
           className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'input' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
@@ -273,7 +273,7 @@ export default function ATSResumeOptimizer() {
 
       <main className="flex-1 flex overflow-hidden">
 
-        {/* 左侧：Input Panel */}
+        {/* Left: Input Panel */}
         <section className={`${activeTab === 'input' ? 'flex' : 'hidden'} md:flex w-full md:w-[400px] border-r bg-white overflow-y-auto scrollbar-hide flex-col print:hidden`}>
           <div className="p-6 space-y-8 flex-1">
 
@@ -345,7 +345,7 @@ export default function ATSResumeOptimizer() {
           </div>
         </section>
 
-        {/* 中间：Resume Preview */}
+        {/* Center: Resume Preview */}
         <section
           className={`
             ${activeTab === 'preview' ? 'flex' : 'hidden'}
@@ -428,7 +428,7 @@ export default function ATSResumeOptimizer() {
           </div>
         </section>
 
-        {/* 右侧：ATS Analysis Panel */}
+        {/* Right: ATS Analysis Panel */}
         <section className={`${activeTab === 'ats' ? 'block' : 'hidden'} md:block w-full md:w-[350px] border-l bg-white overflow-y-auto p-6 scrollbar-hide print:hidden`}>
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
             <CheckCircle2 size={14} className="text-green-500" /> ATS Intelligence
@@ -493,7 +493,7 @@ export default function ATSResumeOptimizer() {
 
       </main>
 
-      {/* 历史记录抽屉 */}
+      {/* History Drawer */}
       {showHistory && (
         <div className="absolute inset-0 bg-black/20 z-50 flex justify-end print:hidden">
           <div className="w-[350px] bg-white h-full shadow-2xl animate-in slide-in-from-right flex flex-col">
@@ -533,7 +533,7 @@ export default function ATSResumeOptimizer() {
         </div>
       )}
 
-      {/* 升级弹窗 */}
+      {/* Upgrade Modal */}
       <UpgradeModal
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}

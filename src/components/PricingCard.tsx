@@ -40,20 +40,17 @@ export function PricingCard({
           : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-lg"
       )}
     >
-      {/* Pro 高亮标签 */}
       {highlighted && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <span className="inline-flex items-center gap-1 px-4 py-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold shadow-lg shadow-amber-500/30">
-            推荐
+            Recommended
           </span>
         </div>
       )}
 
-      {/* 计划名称 */}
       <h3 className="text-lg font-bold text-gray-900 mb-1">{name}</h3>
       <p className="text-sm text-gray-500 mb-5">{description}</p>
 
-      {/* 价格 */}
       <div className="mb-6">
         <span className="text-4xl font-black text-gray-900 tracking-tight">
           {price}
@@ -63,7 +60,6 @@ export function PricingCard({
         )}
       </div>
 
-      {/* CTA 按钮 */}
       {highlighted ? (
         <button
           onClick={onCtaClick}
@@ -84,15 +80,11 @@ export function PricingCard({
         </a>
       )}
 
-      {/* 功能列表 */}
       <div className="mt-8 space-y-3">
         {features.map((feature, i) => (
           <div key={i} className="flex items-start gap-3">
             {feature.included ? (
-              <Check
-                size={16}
-                className="text-green-500 shrink-0 mt-0.5"
-              />
+              <Check size={16} className="text-green-500 shrink-0 mt-0.5" />
             ) : (
               <X size={16} className="text-gray-300 shrink-0 mt-0.5" />
             )}

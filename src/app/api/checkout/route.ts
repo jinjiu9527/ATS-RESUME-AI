@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const { userId, sessionClaims } = await auth();
     if (!userId) {
       return NextResponse.json(
-        { error: "请先登录" },
+        { error: "Login required" },
         { status: 401 }
       );
     }
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     if (!variantId) {
       return NextResponse.json(
-        { error: "产品配置缺失，请检查 LEMON_SQUEEZY_PRO_VARIANT_ID" },
+        { error: "Product configuration missing. Check LEMON_SQUEEZY_PRO_VARIANT_ID." },
         { status: 400 }
       );
     }
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: checkoutUrl });
   } catch (error: any) {
-    console.error("Checkout 创建错误:", error);
+    console.error("Checkout creation error:", error);
     return NextResponse.json(
       { error: error.message || "创建支付链接失败" },
       { status: 500 }
