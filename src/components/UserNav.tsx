@@ -14,7 +14,7 @@ export function UserNav() {
           <UserButton />
           <div className="flex flex-col overflow-hidden">
             <p className="text-xs font-bold text-slate-800 truncate">
-              {user?.fullName || "用户"}
+              {user?.fullName || "User"}
             </p>
             <p className="text-[10px] text-slate-400 truncate">
               {user?.primaryEmailAddress?.emailAddress}
@@ -24,7 +24,7 @@ export function UserNav() {
       ) : (
         <SignInButton mode="modal">
           <button className="w-full py-2 bg-black text-white text-[11px]">
-            登录开始使用
+            Sign In to Get Started
           </button>
         </SignInButton>
       )}

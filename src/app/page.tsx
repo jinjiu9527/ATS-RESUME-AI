@@ -17,13 +17,13 @@ export default function LandingPage() {
             href="/pricing"
             className="text-sm font-medium text-gray-500 hover:text-black transition-colors"
           >
-            定价
+            Pricing
           </Link>
           <Link
             href="/resume"
             className="text-sm font-medium text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            开始使用
+            Get Started
           </Link>
         </div>
       </nav>
