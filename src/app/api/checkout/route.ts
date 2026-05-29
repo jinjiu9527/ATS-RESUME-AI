@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { createCheckout } from "@/lib/lemonsqueezy";
 
 export async function POST(req: Request) {
   try {
-    // 1. 验证用户登录
-    const { userId, sessionClaims } = await auth();
+    // 1. Verify user login
+    const { userId } = await auth();
     if (!userId) {
       return NextResponse.json(
         { error: "Login required" },
@@ -13,15 +13,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const userEmail = (sessionClaims?.email as string) ||
-                      (sessionClaims?.emailAddress as string) || "";
+    // Fetch user email from Clerk (not available in sessionClaims by default)
+    const clerkUser = await (await clerkClient()).users.getUser(userId);
+    const userEmail = clerkUser?.emailAddresses?.[0]?.emailAddress || "";
 
-    // 2. 获取 variant ID（优先用请求体，否则用环境变量）
+    // 2. Get variant ID (request body override, fallback to env var)
     let variantId = process.env.LEMON_SQUEEZY_PRO_VARIANT_ID;
     try {
       const body = await req.json();
       if (body.variantId) variantId = body.variantId;
-    } catch { /* body 为空时使用默认值 */ }
+    } catch { /* body is empty, use default */ }
 
     if (!variantId) {
       return NextResponse.json(
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. 创建 Lemon Squeezy Checkout
+    // 3. Create Lemon Squeezy Checkout
     const checkoutUrl = await createCheckout(
       String(variantId),
       userId,
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Checkout creation error:", error);
     return NextResponse.json(
-      { error: error.message || "创建支付链接失败" },
+      { error: error.message || "Failed to create checkout" },
       { status: 500 }
     );
   }
