@@ -4,18 +4,23 @@ import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const { user, isLoaded } = useUser();
+  const searchParams = useSearchParams();
+  const checkoutId = searchParams.get("checkout_id");
   const [status, setStatus] = useState<"loading" | "success" | "timeout">(
     "loading"
   );
 
   useEffect(() => {
-    if (!isLoaded || !user) return;
+    // 等待 Clerk 加载完成
+    if (!isLoaded) return;
 
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 15;
 
     const checkPlan = async () => {
       try {
@@ -39,10 +44,10 @@ export default function PaymentSuccessPage() {
       }
     };
 
-    // 首次延迟 3 秒（等待 Webhook 处理）
+    // 首次延迟 3 秒（等待 Webhook）
     const timer = setTimeout(checkPlan, 3000);
     return () => clearTimeout(timer);
-  }, [user, isLoaded]);
+  }, [isLoaded, checkoutId]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white p-4">
@@ -56,8 +61,19 @@ export default function PaymentSuccessPage() {
               正在确认支付...
             </h1>
             <p className="text-gray-500 text-sm leading-relaxed">
-              我们正在确认您的支付状态，请稍候片刻。
+              {isLoaded && !user
+                ? "支付已完成，请登录后查看您的 Pro 状态。"
+                : "我们正在确认您的支付状态，请稍候片刻。"}
             </p>
+            {isLoaded && !user && (
+              <Link
+                href="/resume"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm bg-black text-white hover:bg-gray-800 transition-all shadow-lg group mt-6"
+              >
+                登录账户
+                <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            )}
           </>
         )}
 
@@ -77,10 +93,7 @@ export default function PaymentSuccessPage() {
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm bg-black text-white hover:bg-gray-800 transition-all shadow-lg group"
             >
               开始使用 Pro 功能
-              <ArrowRight
-                size={16}
-                className="group-hover:translate-x-0.5 transition-transform"
-              />
+              <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </>
         )}
@@ -101,14 +114,25 @@ export default function PaymentSuccessPage() {
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm bg-black text-white hover:bg-gray-800 transition-all shadow-lg group"
             >
               返回应用
-              <ArrowRight
-                size={16}
-                className="group-hover:translate-x-0.5 transition-transform"
-              />
+              <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-gray-400" />
+        </div>
+      }
+    >
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

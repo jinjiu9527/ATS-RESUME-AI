@@ -5,7 +5,7 @@ import { createCheckout } from "@/lib/lemonsqueezy";
 export async function POST(req: Request) {
   try {
     // 1. 验证用户登录
-    const { userId } = await auth();
+    const { userId, sessionClaims } = await auth();
     if (!userId) {
       return NextResponse.json(
         { error: "请先登录" },
@@ -13,23 +13,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. 获取用户邮箱
-    const { userId: clerkUserId, getToken, sessionClaims } = await auth();
-    const userEmail = sessionClaims?.email as string || "";
+    const userEmail = (sessionClaims?.email as string) ||
+                      (sessionClaims?.emailAddress as string) || "";
 
-    // 3. 获取 variant ID
-    const body = await req.json();
-    const variantId =
-      body.variantId || process.env.LEMON_SQUEEZY_PRO_VARIANT_ID;
+    // 2. 获取 variant ID（优先用请求体，否则用环境变量）
+    let variantId = process.env.LEMON_SQUEEZY_PRO_VARIANT_ID;
+    try {
+      const body = await req.json();
+      if (body.variantId) variantId = body.variantId;
+    } catch { /* body 为空时使用默认值 */ }
 
     if (!variantId) {
       return NextResponse.json(
-        { error: "产品配置缺失" },
+        { error: "产品配置缺失，请检查 LEMON_SQUEEZY_PRO_VARIANT_ID" },
         { status: 400 }
       );
     }
 
-    // 4. 创建 Lemon Squeezy Checkout
+    // 3. 创建 Lemon Squeezy Checkout
     const checkoutUrl = await createCheckout(
       String(variantId),
       userId,

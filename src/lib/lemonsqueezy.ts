@@ -91,6 +91,8 @@ export async function createCheckout(
 }
 
 // ---- 验证 Webhook 签名 ----
+// Lemon Squeezy 签名格式: X-Signature: t=timestamp,v1=hex_hmac
+// HMAC 计算: SHA256(secret, timestamp + "." + raw_body)
 
 export function verifyWebhookSignature(
   rawBody: string,
@@ -100,10 +102,33 @@ export function verifyWebhookSignature(
   if (!secret || !signature) return false;
 
   try {
+    // 解析签名头: "t=1717539200,v1=abcd1234..."
+    const parts: Record<string, string> = {};
+    signature.split(",").forEach((part) => {
+      const [key, val] = part.split("=");
+      if (key && val) parts[key] = val;
+    });
+
+    const timestamp = parts["t"];
+    const hash = parts["v1"];
+
+    if (!timestamp || !hash) {
+      // 兼容简单格式: 直接 HMAC body
+      const hmac = crypto.createHmac("sha256", secret);
+      hmac.update(rawBody);
+      const expected = hmac.digest("hex");
+      return crypto.timingSafeEqual(
+        Buffer.from(expected),
+        Buffer.from(signature)
+      );
+    }
+
+    // 标准格式: HMAC(timestamp + "." + raw_body)
     const hmac = crypto.createHmac("sha256", secret);
-    hmac.update(rawBody);
+    hmac.update(`${timestamp}.${rawBody}`);
     const expected = hmac.digest("hex");
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(hash));
   } catch {
     return false;
   }
