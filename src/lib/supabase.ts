@@ -18,3 +18,12 @@ export const createClerkSupabaseClient = (token: string | null) => {
     }
   )
 }
+
+// Service Role 客户端 — 绕过 RLS，仅用于 Webhook 等服务器端场景
+export const supabaseAdmin =
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      )
+    : null

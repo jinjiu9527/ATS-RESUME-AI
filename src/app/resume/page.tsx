@@ -8,6 +8,8 @@ import {
   Loader2, Download, Trash2,
   Sparkles, History, X, CheckCircle2,
 } from "lucide-react";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { PlanBadge } from "@/components/PlanBadge";
 
 export default function ATSResumeOptimizer() {
   const resumeRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,10 @@ export default function ATSResumeOptimizer() {
     hasOptimized: false,
   });
 
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [userPlan, setUserPlan] = useState<"free" | "pro">("free");
+  const [dailyUsage, setDailyUsage] = useState({ used: 0, limit: 3 });
+
   useEffect(() => {
     const initHistory = async () => {
       if (user?.id) {
@@ -54,35 +60,69 @@ export default function ATSResumeOptimizer() {
     initHistory();
   }, [user?.id]);
 
+  // 获取用户 Pro 状态
+  useEffect(() => {
+    async function fetchPlan() {
+      if (!user?.id) return;
+      try {
+        const res = await fetch("/api/user-plan");
+        if (res.ok) {
+          const data = await res.json();
+          setUserPlan(data.plan as "free" | "pro");
+        }
+      } catch { /* 忽略 */ }
+    }
+    fetchPlan();
+  }, [user?.id]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ---- Export PDF：把表单数据拼进 query string 传给 Puppeteer route ----
- const handleExportPDF = async () => {
-  setIsExporting(true);
-  try {
-    // 先验证次数
-    const response = await fetch('/api/verify-pdf', { method: 'POST' });
-    if (!response.ok) {
-      const error = await response.text();
-      alert(error);
-      return;
+  // ---- 升级处理 ----
+  const handleUpgrade = async () => {
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const { url } = await res.json();
+        window.location.href = url;
+      } else {
+        alert("创建支付链接失败，请稍后重试");
+      }
+    } catch {
+      alert("支付系统暂时不可用");
     }
+  };
 
-    // 验证通过，触发打印
-    window.print();
+  // ---- Export PDF ----
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch('/api/verify-pdf', { method: 'POST' });
+      if (!response.ok) {
+        const errText = await response.text();
+        if (errText.includes("limit") || errText.includes("已用完") || errText.includes("Daily free")) {
+          setDailyUsage({ used: 1, limit: 1 });
+          setShowUpgradeModal(true);
+          return;
+        }
+        alert(errText);
+        return;
+      }
 
-    // 打印后扣除次数
-    await fetch('/api/decrement-pdf', { method: 'POST' });
-  } catch (error) {
-    console.error(error);
-    alert("导出失败");
-  } finally {
-    setIsExporting(false);
-  }
-};
+      window.print();
+      await fetch('/api/decrement-pdf', { method: 'POST' });
+    } catch (error) {
+      console.error(error);
+      alert("导出失败");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleAiOptimize = async () => {
     if (!formData.experience) return alert("Please input some experience to optimize.");
@@ -97,15 +137,29 @@ export default function ATSResumeOptimizer() {
 
       const result = await res.json();
 
+      // 检测使用限制错误
+      if (!res.ok) {
+        const msg = result?.details || result?.error || "";
+        if (msg.includes("limit") || msg.includes("已用完") || msg.includes("Daily free")) {
+          const match = msg.match(/(\d+)\/(\d+)/);
+          if (match) {
+            setDailyUsage({ used: parseInt(match[1]), limit: parseInt(match[2]) });
+          }
+          setShowUpgradeModal(true);
+          return;
+        }
+        throw new Error(msg || "API error");
+      }
+
       if (result.success && result.data) {
-       const d = result.data;
-setFormData(prev => ({
-  ...prev,
-  summary:    d.optimizedSummary    || prev.summary,
-  experience: d.optimizedExperience || prev.experience,
-  skills:     d.optimizedSkills     || prev.skills,
-  education:  d.optimizedEducation  || prev.education,
-}));
+        const d = result.data;
+        setFormData(prev => ({
+          ...prev,
+          summary:    d.optimizedSummary    || prev.summary,
+          experience: d.optimizedExperience || prev.experience,
+          skills:     d.optimizedSkills     || prev.skills,
+          education:  d.optimizedEducation  || prev.education,
+        }));
 
         setAtsResult({
           score:           result.data.score            || 0,
@@ -121,9 +175,14 @@ setFormData(prev => ({
         alert("AI return format error. Please check console.");
       }
     } catch (error) {
-  console.error(error);
-  alert(error instanceof Error ? error.message : "AI Optimization encountered an issue.");
-   } finally {
+      console.error(error);
+      const msg = error instanceof Error ? error.message : "";
+      if (msg.includes("limit") || msg.includes("已用完") || msg.includes("Daily free")) {
+        setShowUpgradeModal(true);
+      } else {
+        alert(msg || "AI Optimization encountered an issue.");
+      }
+    } finally {
       setIsGenerating(false);
     }
   };
@@ -153,26 +212,28 @@ setFormData(prev => ({
     } catch {
       alert("Failed to delete.");
     }
-  };const stripMarkdown = (str: string) =>
-  str
-    .replace(/#{1,6}\s*/g, "")
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .replace(/__(.*?)__/g, "$1")
-    .replace(/_(.*?)_/g, "$1")
-    .replace(/`(.*?)`/g, "$1");
+  };
+
+  const stripMarkdown = (str: string) =>
+    str
+      .replace(/#{1,6}\s*/g, "")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/__(.*?)__/g, "$1")
+      .replace(/_(.*?)_/g, "$1")
+      .replace(/`(.*?)`/g, "$1");
 
   return (
     <div className="flex flex-col h-screen overflow-hidden relative">
 
-      
-{/* 顶部导航栏 */}
+      {/* 顶部导航栏 */}
       <nav className="h-14 border-b bg-white flex items-center justify-between px-6 shrink-0 print:hidden z-20">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 bg-black text-white rounded-md flex items-center justify-center font-bold text-sm">
             A
           </div>
           <span className="font-semibold text-sm tracking-tight">ATS Optimizer Pro</span>
+          {user && <PlanBadge plan={userPlan} />}
         </div>
         <div className="flex items-center gap-4">
           <button
@@ -181,7 +242,6 @@ setFormData(prev => ({
           >
             <History size={14} /> My Resumes
           </button>
-          {/* ✅ 修复：传递表单数据给 Puppeteer */}
           <button
             onClick={handleExportPDF}
             disabled={isExporting}
@@ -195,22 +255,22 @@ setFormData(prev => ({
         </div>
       </nav>
 
-      {/* 主体三栏布局 */}
       {/* 手机端 Tab 导航 */}
-<div className="md:hidden flex border-b bg-white shrink-0 print:hidden">
-  <button onClick={() => setActiveTab('input')}
-    className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'input' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
-    Edit
-  </button>
-  <button onClick={() => setActiveTab('preview')}
-    className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'preview' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
-    Preview
-  </button>
-  <button onClick={() => setActiveTab('ats')}
-    className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'ats' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
-    ATS Score
-  </button>
-</div>
+      <div className="md:hidden flex border-b bg-white shrink-0 print:hidden">
+        <button onClick={() => setActiveTab('input')}
+          className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'input' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
+          Edit
+        </button>
+        <button onClick={() => setActiveTab('preview')}
+          className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'preview' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
+          Preview
+        </button>
+        <button onClick={() => setActiveTab('ats')}
+          className={`flex-1 py-2.5 text-xs font-bold transition-colors ${activeTab === 'ats' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`}>
+          ATS Score
+        </button>
+      </div>
+
       <main className="flex-1 flex overflow-hidden">
 
         {/* 左侧：Input Panel */}
@@ -285,101 +345,88 @@ setFormData(prev => ({
           </div>
         </section>
 
-       {/* 中间：Resume Preview */}
-<section
-  className={`
-    ${activeTab === 'preview' ? 'flex' : 'hidden'}
-    preview-section
-    md:flex
-    
-    /* 1. 核心改动：去掉之前的 justify-center，防止左侧内容被切断 */
-    
-    /* 2. 核心改动：把 overflow-y-auto 改为 overflow-auto，允许内容过多时产生横向滚动条 */
-    overflow-auto
-    
-    flex-1
-    bg-[#F3F4F6]
-    /* 这里的 p-4 和 md:p-10 就是你左边和四周的留白（Padding） */
-    p-4
-    md:p-10
-    print:p-0
-    print:bg-white
-  `}
->
+        {/* 中间：Resume Preview */}
+        <section
+          className={`
+            ${activeTab === 'preview' ? 'flex' : 'hidden'}
+            preview-section
+            md:flex
+            overflow-auto
+            flex-1
+            bg-[#F3F4F6]
+            p-4
+            md:p-10
+            print:p-0
+            print:bg-white
+          `}
+        >
+          <div
+            id="resume-print-area"
+            ref={resumeRef}
+            className="resume-content mx-auto my-auto bg-white shadow-2xl p-[0.75in] text-[#111] print:shadow-none print:w-full print:h-auto shrink-0"
+            style={{ width: "8.5in", minHeight: "11in" }}
+          >
+            {/* Header */}
+            <div className="text-center border-b-[1.5px] border-black pb-4 mb-4">
+              <h1 className="text-[28px] font-serif font-bold uppercase tracking-widest mb-1 leading-none">
+                {formData.name || "JOHN DOE"}
+              </h1>
+              <div className="text-[11px] font-sans flex justify-center items-center gap-2 text-gray-800 uppercase tracking-wider">
+                {formData.location && <span>{formData.location}</span>}
+                {formData.location && (formData.phone || formData.email) && <span>|</span>}
+                {formData.phone && <span>{formData.phone}</span>}
+                {formData.phone && formData.email && <span>|</span>}
+                {formData.email && <span>{formData.email}</span>}
+              </div>
+            </div>
 
-  <div
-    id="resume-print-area"
-    ref={resumeRef}
-    /* 
-      3. 保持 mx-auto 和 my-auto：
-         - 当空间充足时：mx-auto 在 flex 容器里会自动平分左右剩余空间，完美居中。
-         - 当空间不足（左边栏拉得太大）时：mx-auto 会失效，简历自动靠左对齐，
-           死死守住父级设定的 md:p-10（左边留白），你可以顺畅地往右滚动查看全貌！
-    */
-    className="resume-content mx-auto my-auto bg-white shadow-2xl p-[0.75in] text-[#111] print:shadow-none print:w-full print:h-auto shrink-0"
-    style={{ width: "8.5in", minHeight: "11in" }}
-  >
-    {/* Header */}
-    <div className="text-center border-b-[1.5px] border-black pb-4 mb-4">
-      <h1 className="text-[28px] font-serif font-bold uppercase tracking-widest mb-1 leading-none">
-        {formData.name || "JOHN DOE"}
-      </h1>
-      <div className="text-[11px] font-sans flex justify-center items-center gap-2 text-gray-800 uppercase tracking-wider">
-        {formData.location && <span>{formData.location}</span>}
-        {formData.location && (formData.phone || formData.email) && <span>|</span>}
-        {formData.phone && <span>{formData.phone}</span>}
-        {formData.phone && formData.email && <span>|</span>}
-        {formData.email && <span>{formData.email}</span>}
-      </div>
-    </div>
+            {/* Summary */}
+            {(formData.summary || atsResult.hasOptimized) && (
+              <div className="mb-4">
+                <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
+                  Professional Summary
+                </h3>
+                <p className="text-[11px] leading-[1.6] text-justify text-gray-800">
+                  {stripMarkdown(formData.summary) || "Results-driven professional with a proven track record of..."}
+                </p>
+              </div>
+            )}
 
-    {/* Summary */}
-    {(formData.summary || atsResult.hasOptimized) && (
-      <div className="mb-4">
-        <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
-          Professional Summary
-        </h3>
-        <p className="text-[11px] leading-[1.6] text-justify text-gray-800">
-          { stripMarkdown(formData.summary) || "Results-driven professional with a proven track record of..."}
-        </p>
-      </div>
-    )}
+            {/* Experience */}
+            <div className="mb-4">
+              <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
+                Experience
+              </h3>
+              <div className="text-[11px] leading-[1.6] text-gray-800 whitespace-pre-wrap">
+                {stripMarkdown(formData.experience) || "Your optimized professional experience will be structured here."}
+              </div>
+            </div>
 
-    {/* Experience */}
-    <div className="mb-4">
-      <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
-        Experience
-      </h3>
-      <div className="text-[11px] leading-[1.6] text-gray-800 whitespace-pre-wrap">
-        {stripMarkdown(formData.experience) || "Your optimized professional experience will be structured here."}
-      </div>
-    </div>
+            {/* Skills */}
+            {formData.skills && (
+              <div className="mb-4">
+                <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
+                  Core Competencies
+                </h3>
+                <p className="text-[11px] leading-[1.6] text-gray-800">
+                  {stripMarkdown(formData.skills).split(",").map((s) => s.trim()).join(" • ")}
+                </p>
+              </div>
+            )}
 
-    {/* Skills */}
-    {formData.skills && (
-      <div className="mb-4">
-        <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
-          Core Competencies
-        </h3>
-        <p className="text-[11px] leading-[1.6] text-gray-800">
-          {stripMarkdown(formData.skills).split(",").map((s) => s.trim()).join(" • ")}
-        </p>
-      </div>
-    )}
-
-    {/* Education */}
-    {formData.education && (
-      <div className="mb-4">
-        <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
-          Education
-        </h3>
-        <div className="text-[11px] leading-[1.6] text-gray-800 whitespace-pre-wrap">
-          {stripMarkdown(formData.education)}
-        </div>
-      </div>
-    )}
-  </div>
-</section>
+            {/* Education */}
+            {formData.education && (
+              <div className="mb-4">
+                <h3 className="text-[12px] font-bold border-b border-gray-300 mb-2 uppercase tracking-widest text-black">
+                  Education
+                </h3>
+                <div className="text-[11px] leading-[1.6] text-gray-800 whitespace-pre-wrap">
+                  {stripMarkdown(formData.education)}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* 右侧：ATS Analysis Panel */}
         <section className={`${activeTab === 'ats' ? 'block' : 'hidden'} md:block w-full md:w-[350px] border-l bg-white overflow-y-auto p-6 scrollbar-hide print:hidden`}>
@@ -485,6 +532,15 @@ setFormData(prev => ({
           </div>
         </div>
       )}
+
+      {/* 升级弹窗 */}
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        currentUsage={dailyUsage.used}
+        dailyLimit={dailyUsage.limit}
+        onUpgrade={handleUpgrade}
+      />
 
     </div>
   );

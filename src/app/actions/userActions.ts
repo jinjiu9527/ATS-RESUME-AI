@@ -1,28 +1,72 @@
 'use server'
 
 import { auth } from '@clerk/nextjs/server'
-import { createClerkSupabaseClient } from '@/lib/supabase'
+import { createClerkSupabaseClient, supabase } from '@/lib/supabase'
+
+// 免费用户每日限制
+const FREE_LIMITS = {
+  resume: 3,
+  pdf: 1,
+} as const
+
+/** 检查用户是否为 Pro */
+async function isUserPro(userId: string): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan, subscription_status')
+    .eq('id', userId)
+    .single()
+
+  if (!profile) return false
+  // Pro 且状态为 active（取消但未到期也算 active）
+  return profile.plan === 'pro' &&
+    (profile.subscription_status === 'active' ||
+     profile.subscription_status === 'cancelled')
+}
 
 export async function checkAndIncrementUsage(type: 'resume' | 'pdf') {
   const { userId, getToken } = await auth()
   if (!userId) throw new Error("Login required")
 
+  // 检查是否为 Pro 用户，Pro 用户无限制
+  const pro = await isUserPro(userId)
+  if (pro) {
+    // Pro 用户仅记录使用，不限制
+    const today = new Date().toISOString().split('T')[0]
+    const token = await getToken({ template: 'supabase' })
+    const client = createClerkSupabaseClient(token)
+    const { data: profile } = await client
+      .from('profiles')
+      .select('resume_generations, pdf_downloads, last_reset_date')
+      .eq('id', userId)
+      .single()
+
+    const resumeCount = (profile?.last_reset_date === today ? (profile?.resume_generations || 0) : 0)
+    const pdfCount = (profile?.last_reset_date === today ? (profile?.pdf_downloads || 0) : 0)
+    await client
+      .from('profiles')
+      .upsert({
+        id: userId,
+        resume_generations: type === 'resume' ? resumeCount + 1 : resumeCount,
+        pdf_downloads: type === 'pdf' ? pdfCount + 1 : pdfCount,
+        last_reset_date: today
+      }, { onConflict: 'id' })
+    return // Pro 用户无限制，直接通过
+  }
+
   const today = new Date().toISOString().split('T')[0]
-
   const token = await getToken({ template: 'supabase' })
-  const supabase = createClerkSupabaseClient(token)
+  const supabaseClient = createClerkSupabaseClient(token)
 
-  // 1. 获取当前用户的限制数据
-  let { data: profile } = await supabase
+  // 获取或创建用户记录
+  let { data: profile } = await supabaseClient
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .single()
 
-  // 2. 如果用户是第一次使用，创建记录
   if (!profile) {
-    console.log("当前 userId:", userId)
-    const { data: newProfile, error: createError } = await supabase
+    const { data: newProfile, error: createError } = await supabaseClient
       .from('profiles')
       .insert([{ id: userId, resume_generations: 0, pdf_downloads: 0, last_reset_date: today }])
       .select()
@@ -30,41 +74,41 @@ export async function checkAndIncrementUsage(type: 'resume' | 'pdf') {
 
     if (createError) {
       console.error("createError:", JSON.stringify(createError))
-      throw new Error("无法初始化用户配置")
+      throw new Error("初始化用户配置失败")
     }
-
     profile = newProfile
   }
 
-  // 3. 检查日期：如果是新的一天，重置本地变量
   let {
     resume_generations = 0,
     pdf_downloads = 0,
     last_reset_date = today
   } = profile || {}
 
+  // 新的一天重置计数
   if (last_reset_date !== today) {
     resume_generations = 0
     pdf_downloads = 0
     last_reset_date = today
   }
 
-  // 4. 校验限制：生成 3 次，PDF 1 次
-  if (type === 'resume' && resume_generations >= 3) {
-    throw new Error("Daily free limit reached (3/3). Try again tomorrow")
-  }
-  if (type === 'pdf' && pdf_downloads >= 1) {
-    throw new Error("Daily PDF export limit reached (1/1). Try again tomorrow")
+  // 检查免费用户限制
+  const limit = FREE_LIMITS[type]
+  const current = type === 'resume' ? resume_generations : pdf_downloads
+  const label = type === 'resume' ? 'ATS 检测' : 'PDF 导出'
+
+  if (current >= limit) {
+    throw new Error(`每日免费${label}次数已用完 (${current}/${limit})。请升级 Pro 会员或明天再试。`)
   }
 
-  // 5. 更新数据库：次数 +1
+  // 更新次数
   const updateData = {
     resume_generations: type === 'resume' ? resume_generations + 1 : resume_generations,
     pdf_downloads: type === 'pdf' ? pdf_downloads + 1 : pdf_downloads,
     last_reset_date: today
   }
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await supabaseClient
     .from('profiles')
     .update(updateData)
     .eq('id', userId)
@@ -74,23 +118,28 @@ export async function checkAndIncrementUsage(type: 'resume' | 'pdf') {
     throw new Error("更新使用次数失败")
   }
 }
+
 // 仅验证次数，不扣除
 export async function verifyUsage(type: 'resume' | 'pdf') {
   const { userId, getToken } = await auth()
   if (!userId) throw new Error("请先登录")
 
+  // Pro 用户无限制
+  const pro = await isUserPro(userId)
+  if (pro) return true
+
   const today = new Date().toISOString().split('T')[0]
   const token = await getToken({ template: 'supabase' })
-  const supabase = createClerkSupabaseClient(token)
+  const supabaseClient = createClerkSupabaseClient(token)
 
-  let { data: profile } = await supabase
+  let { data: profile } = await supabaseClient
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .single()
 
   if (!profile) {
-    const { data: newProfile, error: createError } = await supabase
+    const { data: newProfile, error: createError } = await supabaseClient
       .from('profiles')
       .insert([{ id: userId, resume_generations: 0, pdf_downloads: 0, last_reset_date: today }])
       .select()
@@ -114,11 +163,12 @@ export async function verifyUsage(type: 'resume' | 'pdf') {
     pdf_downloads = 0
   }
 
-  if (type === 'resume' && resume_generations >= 6) {
-    throw new Error("You have reached your daily limit of 3 free resume generations. Please try again tomorrow.")
-  }
-  if (type === 'pdf' && pdf_downloads >= 2) {
-    throw new Error("You have reached your daily limit of 2 free PDF exports. Please try again tomorrow.")
+  const limit = FREE_LIMITS[type]
+  const current = type === 'resume' ? resume_generations : pdf_downloads
+  const label = type === 'resume' ? 'ATS 检测' : 'PDF 导出'
+
+  if (current >= limit) {
+    throw new Error(`每日免费${label}次数已用完 (${current}/${limit})。请升级 Pro 会员或明天再试。`)
   }
 
   return true
@@ -129,11 +179,15 @@ export async function decrementUsage(type: 'resume' | 'pdf') {
   const { userId, getToken } = await auth()
   if (!userId) return
 
+  // Pro 用户不扣除
+  const pro = await isUserPro(userId)
+  if (pro) return
+
   const today = new Date().toISOString().split('T')[0]
   const token = await getToken({ template: 'supabase' })
-  const supabase = createClerkSupabaseClient(token)
+  const supabaseClient = createClerkSupabaseClient(token)
 
-  let { data: profile } = await supabase
+  let { data: profile } = await supabaseClient
     .from('profiles')
     .select('*')
     .eq('id', userId)
@@ -158,7 +212,7 @@ export async function decrementUsage(type: 'resume' | 'pdf') {
     last_reset_date: today
   }
 
-  await supabase
+  await supabaseClient
     .from('profiles')
     .update(updateData)
     .eq('id', userId)
